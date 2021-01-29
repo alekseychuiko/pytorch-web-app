@@ -34,13 +34,12 @@ def prediction(filename):
     if request.method == 'POST' and filename:
         val = app.config['UPLOADED_PHOTOS_DEST']+filename
         obj.image = filename
-        jf = url_for('static', filename='data/imagenet_class_index.json')
         if supported_image_type(val):
-            p = predict(val, jf)
-            if len(p) == 2:
+            filename = predict(val)
+            if filename != "":
                 obj.is_image_display = True
                 obj.is_predicted = True
-                obj.value = cleanString(p[1])
+                obj.mask = filename
                 return render_template('/predict.html', obj=obj)
             else:
                 flash(f'Something went wrong with prediction. Try a different image')

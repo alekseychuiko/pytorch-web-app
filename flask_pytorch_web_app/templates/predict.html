@@ -10,18 +10,23 @@
       {% if obj.is_image_display %}
         {% if obj.is_predicted %}
           <div id="prediction"> 
-            <h1> Classification Result: {{ obj.value }} </h1> 
+            <h1> Segmentation Result: {{ obj.value }} </h1> 
           </div>
         {% else %}
           <div>
             <form method=POST enctype=multipart/form-data action="{{ url_for('prediction', filename=obj.image) }}">
-              <input type="submit" value="Classify Image" id="blockButton">
+              <input type="submit" value="Segment Image" id="blockButton">
             </form>
           </div> 
         {% endif %}
         <div > 
           <img id="inputImage" src={{ url_for('send_file', filename=obj.image) }} alt="User Image">
         </div>
+        {% if obj.is_predicted %}
+        <div > 
+          <img id="inputImage" src={{ url_for('send_file', filename=obj.mask) }} alt="User Mask">
+        </div>
+        {% endif %}
       {% endif %}
 {% endblock %}
 

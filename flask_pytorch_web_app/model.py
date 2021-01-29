@@ -1,25 +1,29 @@
 import io
-from os import getcwd
+import os
 import json
+import torch
 import torchvision.transforms as transforms
 from torchvision import models
+from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from PIL import Image
+from flask import current_app as app
 
-# Make sure to pass `pretrained` as `True` to use the pretrained weights:
-model = models.densenet121(pretrained=True)
+num_classes = 12
+model = models.segmentation.deeplabv3_resnet101(pretrained=True, progress=True)
+model.classifier = DeepLabHead(2048, num_classes)
+model.load_state_dict(torch.load(app.config['MODEL_PATH']))
+
+device = 'cuda'
 # Since we are using our model only for inference, switch to `eval` mode:
 model.eval()
+model.to(device)
+palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** num_classes - 1])
+colors = torch.as_tensor([i for i in range(num_classes)])[:, None] * palette
+colors = (colors % 255).numpy().astype("uint8")
 
-
-def transform_image(image_bytes):
-    my_transforms = transforms.Compose([transforms.Resize(255),
-                                        transforms.CenterCrop(224),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize(
-                                            [0.485, 0.456, 0.406],
-                                            [0.229, 0.224, 0.225])])
-    image = Image.open(io.BytesIO(image_bytes))
-    return my_transforms(image).unsqueeze(0)
+def transform_image(image):
+    my_transforms = transforms.ToTensor()
+    return my_transforms(image)
 
 def supported_image_type(img):
     try:
@@ -28,20 +32,24 @@ def supported_image_type(img):
     except:
         return False
 
-def predict(image_file, class_file):
+def predict(image_file):
     try:
-        class_file = getcwd() + '/flask_pytorch_web_app/' + class_file
-        imagenet_class_index = json.load(open(class_file))
-        with open(image_file, 'rb') as f:
-            image_bytes = f.read()
-            tensor = transform_image(image_bytes=image_bytes)
-            outputs = model.forward(tensor)
-            _, y_hat = outputs.max(1)
-            predicted_idx = str(y_hat.item())
-        return imagenet_class_index[predicted_idx]
+        image = Image.open(image_file)
+        tensor = transform_image(image=image)
+        input_batch = tensor.unsqueeze(0)
+        input_batch = input_batch.to(device)
+        with torch.no_grad():
+            outputs = model(input_batch)['out'][0]
+        output_predictions = outputs.argmax(0)
+        r = Image.fromarray(output_predictions.byte().cpu().numpy()).resize(image.size)
+        r.putpalette(colors)
+        file_path = os.path.splitext(image_file)[0] + "_mask" + ".jpg"
+        head, tail = os.path.split(file_path)
+        r.convert('RGB').save(file_path, "JPEG")
+        return tail
     except:
         print(f"Something went wrong with the model. May be image format is not supported")
-        return []
+        return ""
 
 #testing
 def test():
