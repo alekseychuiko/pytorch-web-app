@@ -17,9 +17,19 @@ device = 'cuda'
 # Since we are using our model only for inference, switch to `eval` mode:
 model.eval()
 model.to(device)
-palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** num_classes - 1])
-colors = torch.as_tensor([i for i in range(num_classes)])[:, None] * palette
-colors = (colors % 255).numpy().astype("uint8")
+
+colors = [   0,   0,   0,
+           192, 128, 128,
+             0, 128,   0,
+           128, 128, 128,
+           128,   0,   0,
+             0,   0, 128,
+           192,   0, 128,
+           192,   0,   0,
+           192, 128,   0,
+             0,  64,   0,
+           128, 128,   0,
+             0, 128, 128]
 
 def transform_image(image):
     my_transforms = transforms.ToTensor()
