@@ -17,3 +17,4 @@ class Config:
     STATIC_FOLDER = environ.get('STATIC_FOLDER')
     TEMPLATES_FOLDER = environ.get('TEMPLATES_FOLDER')
     UPLOADED_PHOTOS_DEST = environ.get('UPLOADED_PHOTOS_DEST')
+    MODEL_PATH = environ.get('MODEL_PATH')
